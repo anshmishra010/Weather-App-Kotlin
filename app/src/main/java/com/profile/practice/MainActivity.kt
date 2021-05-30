@@ -3,14 +3,17 @@ package com.profile.practice
 import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.ContactsContract.CommonDataKinds.Website.URL
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.loader.content.AsyncTaskLoader
+import org.json.JSONException
 import org.json.JSONObject
+import java.io.*
 import java.lang.Exception
+import java.net.HttpURLConnection
+import java.net.URL
 import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,7 +32,7 @@ class MainActivity : AppCompatActivity() {
 
         // creating the function for performing the activity
 
-        weatherFun().execute()
+        weatherFun().execute(city,api)
 
     }
     inner class weatherFun() : AsyncTask<String, Void, String>()
@@ -45,17 +48,28 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun doInBackground(vararg p0: String?): String? {
-            var response:String?
-            try {
-
-                response = URL("https://api.openweathermap.org/data/2.5/weather?q=$city&units=metric&appid=$api").readText(Charsets.UTF_8)
-
+                var response: String? = null
+                try {
+                    val url = URL("https://api.openweathermap.org/data/2.5/weather?q=$city&units=metric&appid=$api")
+                    val urlConnection: HttpURLConnection = url.openConnection() as HttpURLConnection
+                    val stream: InputStream = BufferedInputStream(urlConnection.inputStream)
+                    val bufferedReader = BufferedReader(InputStreamReader(stream))
+                    val builder = StringBuilder()
+                    var inputString: String?
+                    while (bufferedReader.readLine().also { inputString = it } != null) {
+                        builder.append(inputString)
+                    }
+                    val topLevel = JSONObject(builder.toString())
+                    response = topLevel.toString()
+                    urlConnection.disconnect()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                } catch (e: JSONException) {
+                    e.printStackTrace()
+                }
+                return response
             }
-            catch (e: Exception){
-                response = null
-            }
-            return response
-        }
+
 
         override fun onPostExecute(result: String?) {
             super.onPostExecute(result)
